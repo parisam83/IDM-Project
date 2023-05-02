@@ -4,9 +4,9 @@ public class Main {
 
     public static void main(String[] args) {
         for (int i = 0; i < 26; i++) {
-            System.out.println((char) (i + 97));
+            // System.out.println((char) (i + 97));
         }
-        new MultiThreadCopier(new Sos(), "./a.result", 2).start();
+        new MultiThreadCopier(new Sos(), "./a.result", 26).start();
     }
 
     static class Ss implements SourceReader {
