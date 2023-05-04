@@ -10,15 +10,19 @@ public class Worker extends Thread {
     private final SourceProvider sourceProvider;
     private RandomAccessFile randomAccessFile;
     private final String dest;
-    private boolean isNeeded = true;
+    private boolean isFinished;
+    private MySemaphore mainSemaphore, mySemaphore;
 
-    public Worker(int id, long leftIndex, long rightIndex, SourceProvider sourceProvider, String dest){
+
+    public Worker(int id, long leftIndex, long rightIndex, SourceProvider sourceProvider, String dest, MySemaphore mainSemaphore){
         this.id = id;
         this.leftIndex = leftIndex;
         this.rightIndex = rightIndex;
         this.sourceProvider = sourceProvider;
         this.dest = dest;
-        setRandomAccessFile();
+        this.mainSemaphore = mainSemaphore;
+        this.mySemaphore = new MySemaphore();
+        this.isFinished = false;
     }
 
     private void setRandomAccessFile(){
@@ -32,14 +36,12 @@ public class Worker extends Thread {
 
     @Override
     public void run() {
-        while (isNeeded) {
-            System.out.println("hi");
+        while (!isFinished) {
             SourceReader sourceReader = sourceProvider.connect(leftIndex);
+            setRandomAccessFile();
             try {
-                // if (id == 2) Thread.sleep(2000);
                 while (leftIndex < rightIndex) {
-                    //randomAccessFile.writeByte(id);
-                    randomAccessFile.write(sourceReader.read() + id - 20);
+                    randomAccessFile.write(sourceReader.read());
                     synchronized (lockLeftIndex) {
                         leftIndex++;
                     }
@@ -48,6 +50,8 @@ public class Worker extends Thread {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            mainSemaphore.doNotify();
+            mySemaphore.doWait();
         }
     }
 
@@ -59,6 +63,10 @@ public class Worker extends Thread {
         synchronized (lockRightIndex) {
             rightIndex -= amount;
         }
+    }
+
+    public MySemaphore getMySemaphore() {
+        return mySemaphore;
     }
 
     public long getLeftIndex() {
@@ -77,7 +85,16 @@ public class Worker extends Thread {
         this.rightIndex = rightIndex;
     }
 
-    public void setNeeded(boolean needed) {
-        isNeeded = needed;
+    public void setFinished(boolean finished) {
+        isFinished = finished;
+    }
+
+    public boolean isFinished() {
+        return isFinished;
+    }
+
+    @Override
+    public long getId() {
+        return id;
     }
 }

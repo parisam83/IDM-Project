@@ -3,10 +3,7 @@ package ir.sharif.math.ap2023.hw5;
 public class Main {
 
     public static void main(String[] args) {
-        for (int i = 0; i < 26; i++) {
-            // System.out.println((char) (i + 97));
-        }
-        new MultiThreadCopier(new Sos(), "./a.result", 26).start();
+        new MultiThreadCopier(new Sos(), "./a.result", 6).start();
     }
 
     static class Ss implements SourceReader {
@@ -20,9 +17,9 @@ public class Main {
         public byte read() {
             try {
                 if (offset < 50)
-                    Thread.sleep(10);
+                    Thread.sleep(1);
                 else
-                    Thread.sleep(100);
+                    Thread.sleep(10);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

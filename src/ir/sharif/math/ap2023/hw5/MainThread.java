@@ -3,15 +3,17 @@ package ir.sharif.math.ap2023.hw5;
 import java.util.ArrayList;
 
 public class MainThread extends Thread {
+    private MySemaphore mainSemaphore;
     private ArrayList<Worker> workers;
 
-    public MainThread(ArrayList<Worker> workers){
+    public MainThread(MySemaphore mainSemaphore, ArrayList<Worker> workers){
+        this.mainSemaphore = mainSemaphore;
         this.workers = workers;
     }
 
     private Worker findBikarWorker(){
         for (Worker worker : workers)
-            if (worker.getLeftIndex() >= worker.getRightIndex())
+            if (!worker.isFinished() && worker.getLeftIndex() >= worker.getRightIndex())
                 return worker;
         return null;
     }
@@ -28,19 +30,36 @@ public class MainThread extends Thread {
         return porkarWorker;
     }
 
+    private boolean isDownloadingDone(){
+        for (Worker worker : workers)
+            if (!worker.isFinished())
+                return false;
+        return true;
+    }
+
+    private void stopAllWorkers(){
+        for (Worker worker : workers)
+            worker.getMySemaphore().doNotify();
+    }
+
     @Override
     public void run() {
-        while (true){
+        while (!isDownloadingDone()){
+            mainSemaphore.doWait();
             Worker bikarWorker = findBikarWorker();
-            if (bikarWorker == null) continue;
-
             Worker porkarWorker = findPorkarWorker();
-            if (porkarWorker == null) continue;
+            if (porkarWorker == null) {
+                bikarWorker.setFinished(true);
+                bikarWorker.getMySemaphore().doNotify();
+                continue;
+            }
 
             long remainingWork = porkarWorker.getRemainingWork();
             bikarWorker.setRightIndex(porkarWorker.getRightIndex());
             porkarWorker.reduceRightIndex(remainingWork/2);
-            bikarWorker.setLeftIndex(porkarWorker.getLeftIndex());
+            bikarWorker.setLeftIndex(porkarWorker.getRightIndex());
+            bikarWorker.setFinished(false);
+            bikarWorker.getMySemaphore().doNotify();
         }
     }
 }
